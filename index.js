@@ -24,13 +24,22 @@ program
         checkPathExists(oldPath);
         checkPathExists(newPath);
 
-        function reducer(acc, value) {
-            acc[value.name] = value.size;
-            return acc;
+        const oldFile = require(oldPath);
+        const newFile = require(newPath);
+
+        const oldChunkNameByAssetName = _.invert(oldFile.assetsByChunkName);
+        const newChunkNameByAssetName = _.invert(newFile.assetsByChunkName);
+
+        function createReducer(chunkNameByAssetName) {
+            return function reducer(acc, value) {
+                const assetName = value.name;
+                acc[chunkNameByAssetName[assetName] || assetName] = value.size;
+                return acc;
+            };
         }
 
-        oldAssets = require(oldPath).assets.reduce(reducer, {});
-        newAssets = require(newPath).assets.reduce(reducer, {});
+        oldAssets = oldFile.assets.reduce(createReducer(oldChunkNameByAssetName), {});
+        newAssets = newFile.assets.reduce(createReducer(newChunkNameByAssetName), {});
 
         // function convert(o, n) {
         //     return {
